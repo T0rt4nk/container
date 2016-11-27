@@ -18,7 +18,7 @@ setup () {
 	declare dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	sudo rsync -av --no-o --exclude=".gitkeep" "$dir/root/" "$ROOTFS/"
 	sudo cp setup.sh "$ROOTFS/tmp/setup.sh"
-	sudo systemd-nspawn -D "$ROOTFS" /tmp/setup.sh
+	sudo systemd-nspawn -M tortank -D "$ROOTFS" /tmp/setup.sh
 }
 
 build () {
@@ -29,7 +29,7 @@ build () {
 run () {
 	DEBUG=1  # enforce DEBUG
 	init "$1"
-	sudo systemd-nspawn -b -D "$ROOTFS"
+	sudo systemd-nspawn -M tortank -b -D "$ROOTFS"
 }
 
 main() {
