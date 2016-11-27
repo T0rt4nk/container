@@ -16,7 +16,7 @@ debootstrap () {
 setup () {
 	init "$1"
 	declare dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-	sudo rsync -a "$dir/root/" "$ROOTFS/"
+	sudo rsync -av --no-o --exclude=".gitkeep" "$dir/root/" "$ROOTFS/"
 	sudo cp setup.sh "$ROOTFS/tmp/setup.sh"
 	sudo systemd-nspawn -D "$ROOTFS" /tmp/setup.sh
 }
@@ -26,12 +26,19 @@ build () {
 	setup "$ROOTFS"
 }
 
+run () {
+	DEBUG=1  # enforce DEBUG
+	init "$1"
+	sudo systemd-nspawn -b -D "$ROOTFS"
+}
+
 main() {
 	set -eo pipefail; [[ "$DEBUG" ]] && set -x
 	declare cmd="$1"
 	case "$cmd" in
 		debootstrap)	shift;	debootstrap "$@";;
 		setup)			shift;	setup "$@";;
+		run)			shift;  run "$@";;
 		*)				build "$@";;
 	esac
 }
