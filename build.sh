@@ -2,21 +2,20 @@
 ROOTFS=
 
 init () {
+	ROOTFS="$1"
 	sudo -v
 	[[ "$DEBUG" ]] || trap "sudo rm -rf $ROOTFS" ERR
+	trap "echo $ROOTFS" EXIT
 }
 
 debootstrap () {
-	init
-	ROOTFS="$(mktemp -d "${TMPDIR:-/var/tmp}/debian-tortank-XXXXXX")"
+	init "$(mktemp -d "${TMPDIR:-/var/tmp}/debian-tortank-XXXXXX")"
 	sudo debootstrap --arch=amd64 jessie "$ROOTFS" "http://httpredir.debian.org/debian"
-	echo "$ROOTFS"
 }
 
 setup () {
-	init
+	init "$1"
 	declare dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-	ROOTFS="$1"
 	sudo rsync -a "$dir/root/" "$ROOTFS/"
 	sudo cp setup.sh "$ROOTFS/tmp/setup.sh"
 	sudo systemd-nspawn -D "$ROOTFS" /tmp/setup.sh

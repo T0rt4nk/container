@@ -1,0 +1,5 @@
+# This file is managed by Puppet. DO NOT EDIT.
+Explanation: apt: experimental
+Package: *
+Pin: release a=experimental
+Pin-Priority: 200
