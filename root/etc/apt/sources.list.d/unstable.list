@@ -1,0 +1,3 @@
+# unstable
+deb http://httpredir.debian.org/debian unstable main non-free contrib
+deb-src http://httpredir.debian.org/debian unstable main non-free contrib
