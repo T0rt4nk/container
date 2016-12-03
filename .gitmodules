@@ -1,3 +1,6 @@
 [submodule "root/home/max/.config/nvim"]
 	path = root/home/max/.config/nvim
 	url = https://github.com/IxDay/.vim.git
+[submodule "root/home/max/documents/development/dotfiles"]
+	path = root/home/max/documents/development/dotfiles
+	url = https://github.com/IxDay/dotfiles
