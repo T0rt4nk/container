@@ -1,0 +1,9 @@
+#!ipxe
+
+
+set base-url http://192.168.122.1:5050
+
+kernel ${base-url}/vmlinuz-grsec
+initrd ${base-url}/pxerd
+
+boot
