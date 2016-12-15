@@ -13,3 +13,9 @@
 [submodule "container/root/home/max/.config/nvim"]
 	path = container/root/home/max/.config/nvim
 	url = git@github.com:IxDay/.vim.git
+[submodule "vendor/alpine-iso"]
+	path = vendor/alpine-iso
+	url = git://git.alpinelinux.org/alpine-iso
+[submodule "vendor/apk-tools"]
+	path = vendor/apk-tools
+	url = git://git.alpinelinux.org/apk-tools
