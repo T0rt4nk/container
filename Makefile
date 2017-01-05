@@ -19,14 +19,16 @@ vendor/alpine-iso:
 	$(MAKE) -C $@
 
 
-chroot: bin/rootfs
+chroot: bin/alpine
 	sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt
 
 
-bin/rootfs:
+bin/alpine:
 	mkdir -p $@
 	-tar xvzf $(ROOTFS) -C $@
-	sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk perl xz-dev
+	wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" | \
+        	tar --one-top-level="$@" --transform="s|rootfs/|/|" -xzf -
+        sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk perl xz-dev
 
 
 
