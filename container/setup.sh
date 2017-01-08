@@ -14,7 +14,7 @@ apt-get update && apt-get ${apt_options[@]} dist-upgrade
 
 declare packages=(
 	"locales" "git" "tig" "zsh" "tmux" "ranger" "make" "apt-file" "rxvt-unicode-256color"
-	"google-chrome-stable" "grub" "ssh"
+	"google-chrome-stable" "grub" "ssh" "vim"
 	# "steam" not working right now removing
 	# Python
 	"python-pip" "python-dev" "ipython" "python-distlib-whl"
@@ -24,7 +24,7 @@ declare packages=(
     "nvidia-driver"
 )
 declare packages_unstable=(
-	"neovim"
+#	"neovim"
 )
 
 apt-get ${apt_options[@]} install -t unstable "${packages_unstable[@]}"

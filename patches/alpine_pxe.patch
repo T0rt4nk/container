@@ -1,0 +1,28 @@
+From cd2aca075105568b005048f7b3c2ee732c2c922b Mon Sep 17 00:00:00 2001
+From: Maxime Vidori <maxime.vidori@gmail.com>
+Date: Sun, 8 Jan 2017 13:42:41 +0100
+Subject: [PATCH] Add pxe profile
+
+---
+ alpine-pxe.conf.mk  | 4 ++++
+ alpine-pxe.packages | 0
+ 2 files changed, 4 insertions(+)
+ create mode 100644 alpine-pxe.conf.mk
+ create mode 100644 alpine-pxe.packages
+
+diff --git a/alpine-pxe.conf.mk b/alpine-pxe.conf.mk
+new file mode 100644
+index 0000000..9a7ab2a
+--- /dev/null
++++ b/alpine-pxe.conf.mk
+@@ -0,0 +1,4 @@
++ALPINE_NAME   := alpine-pxe
++KERNEL_FLAVOR := grsec
++INITFS_FEATURES := ata base bootchart squashfs ext4 usb virtio network dhcp
++MODLOOP_EXTRA :=
+diff --git a/alpine-pxe.packages b/alpine-pxe.packages
+new file mode 100644
+index 0000000..e69de29
+-- 
+2.1.4
+

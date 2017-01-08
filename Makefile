@@ -1,4 +1,4 @@
-VENDORS = vendor/darkhttpd vendor/ipxe/src vendor/apk-tools
+VENDORS = vendor/darkhttpd vendor/ipxe/src
 
 .PHONY: vendors $(VENDORS) clean
 
@@ -11,26 +11,18 @@ vendor/ipxe/src:
 vendor/darkhttpd:
 	$(MAKE) -C $@
 
-vendor/apk-tools:
-	$(MAKE) -C $@
-
 vendor/alpine-iso:
 	abuild-keygen -i
 	$(MAKE) -C $@
 
-
 chroot: bin/alpine
 	sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt
 
-
 bin/alpine:
 	mkdir -p $@
-	-tar xvzf $(ROOTFS) -C $@
 	wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" | \
-        	tar --one-top-level="$@" --transform="s|rootfs/|/|" -xzf -
-        sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk perl xz-dev
-
-
+		tar -C "$@" --transform="s|rootfs/|/|" -xzf -
+	sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk
 
 clean:
 	@for dir in $(VENDORS); do \

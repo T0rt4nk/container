@@ -1,0 +1,28 @@
+From 57af7bc44d481c39a55c11b367f4b54ed1f7befe Mon Sep 17 00:00:00 2001
+From: Maxime Vidori <maxime.vidori@gmail.com>
+Date: Sun, 8 Jan 2017 13:27:45 +0100
+Subject: [PATCH] Add an ipxe patch
+
+---
+ src/ipxelinux.0 | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+ create mode 100644 src/ipxelinux.0
+
+diff --git a/src/ipxelinux.0 b/src/ipxelinux.0
+new file mode 100644
+index 0000000..637afaf
+--- /dev/null
++++ b/src/ipxelinux.0
+@@ -0,0 +1,9 @@
++#!ipxe
++
++
++set base-url http://192.168.122.1:5050
++
++kernel ${base-url}/vmlinuz-grsec
++initrd ${base-url}/pxerd
++
++boot
+-- 
+2.1.4
+

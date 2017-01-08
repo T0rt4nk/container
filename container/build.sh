@@ -29,7 +29,7 @@ build () {
 run () {
 	DEBUG=1  # enforce DEBUG
 	init "$1"
-	sudo systemd-nspawn -M tortank --network-veth --network-bridge=virbr0 -bD "$ROOTFS"
+	sudo systemd-nspawn -M tortank -bD "$ROOTFS"
 }
 
 main() {
