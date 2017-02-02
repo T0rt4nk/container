@@ -1,24 +1,38 @@
-.PHONY: clean bin/data
+.PHONY: clean
 
+ISO = vendor/alpine-iso
 
-vendor/ipxe/src/bin/ipxe.iso:
+PROFILE = $(ISO)/alpine-pxe
+
+INITFS = $(ISO)/isotmp.alpine-pxe/isofs/boot/initramfs-grsec
+KERNEL = $(ISO)/isotmp.alpine-pxe/isofs/boot/vmlinuz-grsec
+
+DATA = bin/data/initramfs-grsec bin/data/vmlinuz-grsec
+MAKE_ALPINE = $(MAKE) -C $(ISO) PROFILE=alpine-pxe
+
+all: ipxe darkhttpd $(INITFS) $(KERNEL)
+
+ipxe: vendor/ipxe/src/bin/ipxe.iso # alias
+
+vendor/ipxe/src/bin/ipxe.iso: vendor/ipxe/src/ipxelinux.0
 	$(MAKE) -C vendor/ipxe/src bin/ipxe.iso EMBED=ipxelinux.0
 
+darkhttpd: vendor/darkhttpd/darkhttpd_ # alias
+
 vendor/darkhttpd/darkhttpd_:
-	$(MAKE) -C $@
+	$(MAKE) -C $(dir $@)
 
-vendor/alpine-iso/isotmp.alpine-pxe:
+_alpine-pxe: # indirection target BEWARE: use this with caution
+	$(MAKE_ALPINE) clean
 	abuild-keygen -ina
-	fakeroot $(MAKE) -C $@ PROFILE=alpine-pxe
+	fakeroot $(MAKE_ALPINE)
+	@touch $(KERNEL) # update the modify time to avoid recompilation
 
-bin/data: vendor/alpine-iso/isotmp.alpine-pxe
-	mkdir -p bin/data
-	ln -sf ../../$^/isofs/boot/initramfs-grsec $@
-	ln -sf ../../$^/isofs/boot/vmlinuz-grsec $@
-
+$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages
+	@CMD="$(MAKE) -C /mnt _alpine-pxe" $(MAKE) chroot
 
 chroot: bin/alpine
-	sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt
+	@sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt $(CMD)
 
 bin/alpine:
 	mkdir -p $@
@@ -26,19 +40,25 @@ bin/alpine:
 		tar -C "$@" --transform="s|rootfs/|/|" -xzf -
 	sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev
 
+$(DATA): $(INITFS) $(KERNEL)
+	@mkdir -p bin/data
+	@ln -sf $(CURDIR)/$(dir $<)$(notdir $@) $@
+
+bin/data: $(DATA)
 
 serve: vendor/darkhttpd/darkhttpd_ bin/data
 	$(word 1,$^) $(word 2,$^) --port 5050
 
 clean:
-	@for dir in $(VENDORS); do \
-        $(MAKE) -C $$dir clean; \
-    done
 	@sudo rm -rf bin/*
+	@sudo $(MAKE_ALPINE) clean 2> /dev/null
+	@for dir in vendor/ipxe/src vendor/darkhttpd; do \
+		$(MAKE) -C $$dir clean; \
+	done
 
-run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes
+run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes bin/data
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
-		--cdrom $(word 1, $^) --disk size=10
+		--cdrom $< --disk size=10
 
 clean.virsh:
 	virsh list | awk '$$2 ~ /ipxe/ {system("virsh destroy " $$2)}'
