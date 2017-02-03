@@ -25,10 +25,10 @@ vendor/darkhttpd/darkhttpd_:
 _alpine-pxe: # indirection target BEWARE: use this with caution
 	$(MAKE_ALPINE) clean
 	abuild-keygen -ina
-	fakeroot $(MAKE_ALPINE)
+	fakeroot $(MAKE_ALPINE) INITFS_SCRIPT=init.sh
 	@touch $(KERNEL) # update the modify time to avoid recompilation
 
-$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages
+$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages $(ISO)/init.sh
 	@CMD="$(MAKE) -C /mnt _alpine-pxe" $(MAKE) chroot
 
 chroot: bin/alpine

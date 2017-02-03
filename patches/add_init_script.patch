@@ -1,0 +1,42 @@
+From 1076115da97c666de25d902f20d3fd01205b6230 Mon Sep 17 00:00:00 2001
+From: Maxime Vidori <maxime.vidori@gmail.com>
+Date: Fri, 3 Feb 2017 13:34:10 +0100
+Subject: [PATCH] Add a possibility to configure the init script
+
+When building a new iso the init script included in the initramfs is the
+default one and cannot be configured.
+This patch introduce an INITFS_SCRIPT which is configurable with a custom
+script location, or if not provided take the default one in
+/usr/share/mkinitfs/initramfs-init
+---
+ Makefile | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index f88a6a9..e25d395 100755
+--- a/Makefile
++++ b/Makefile
+@@ -128,6 +128,7 @@ INITFS_TMP	= $(DESTDIR)/tmp.initfs.$*
+ INITFS_DIRSTAMP := $(DESTDIR)/stamp.initfs.%
+ INITFS_FEATURES	?= ata base bootchart cdrom squashfs ext2 ext3 ext4 mmc raid scsi usb virtio
+ INITFS_PKGS	= $(MODLOOP_PKGS) alpine-base acct mdadm
++INITFS_SCRIPT ?= /usr/share/mkinitfs/initramfs-init
+ 
+ initfs-%: $(INITFS)
+ 	@:
+@@ -152,9 +153,9 @@ $(INITFS_DIRSTAMP):
+ 	fi
+ 	@touch $@
+ 
+-$(INITFS): $(INITFS_DIRSTAMP) $(MODLOOP_DIRSTAMP)
+-	@mkinitfs -F "$(INITFS_FEATURES)" -t $(INITFS_TMP) \
+-		-b $(INITFS_DIR) -o $@ $(MODLOOP_KERNEL_RELEASE)
++$(INITFS): $(INITFS_DIRSTAMP) $(MODLOOP_DIRSTAMP) $(INITFS_SCRIPT)
++	mkinitfs -F "$(INITFS_FEATURES)" -t $(INITFS_TMP) \
++		-b $(INITFS_DIR) -o $@ -i $(INITFS_SCRIPT) $(MODLOOP_KERNEL_RELEASE)
+ 
+ clean-initfs-%:
+ 	@rm -rf $(subst %,$*,$(INITFS) $(INITFS_DIRSTAMP)) $(INITFS_DIR)
+-- 
+2.1.4
+
