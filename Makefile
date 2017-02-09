@@ -1,8 +1,12 @@
 .PHONY: clean
 
+BRIDGE_IP = 192.168.122.1
+SERVER_PORT ?= 5050
+
 ISO = vendor/alpine-iso
 
 PROFILE = $(ISO)/alpine-pxe
+ALPINE_REPO = "rsync://rsync.alpinelinux.org/alpine/v3.2/main/x86_64"
 
 INITFS = $(ISO)/isotmp.alpine-pxe/isofs/boot/initramfs-grsec
 KERNEL = $(ISO)/isotmp.alpine-pxe/isofs/boot/vmlinuz-grsec
@@ -24,11 +28,12 @@ vendor/darkhttpd/darkhttpd_:
 
 _alpine-pxe: # indirection target BEWARE: use this with caution
 	$(MAKE_ALPINE) clean
+	apk update
 	abuild-keygen -ina
 	fakeroot $(MAKE_ALPINE) INITFS_SCRIPT=init.sh
 	@touch $(KERNEL) # update the modify time to avoid recompilation
 
-$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages $(ISO)/init.sh
+$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages $(ISO)/init.sh serve.lock bin/data/alpine
 	@CMD="$(MAKE) -C /mnt _alpine-pxe" $(MAKE) chroot
 
 chroot: bin/alpine
@@ -38,16 +43,23 @@ bin/alpine:
 	mkdir -p $@
 	wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" | \
 		tar -C "$@" --transform="s|rootfs/|/|" -xzf -
+	echo "http://$(BRIDGE_IP):$(SERVER_PORT)/alpine" > "$@/etc/apk/repositories"
 	sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev
+
+bin/data/alpine:
+	# https://wiki.alpinelinux.org/wiki/How_to_setup_a_Alpine_Linux_mirror
+	@mkdir -p "$@"
+	/usr/bin/rsync --archive --update --hard-links --delete --info=progress2 \
+        --delete-after --delay-updates --timeout=600 \
+        $(ALPINE_REPO) "$@"
 
 $(DATA): $(INITFS) $(KERNEL)
 	@mkdir -p bin/data
 	@ln -sf $(CURDIR)/$(dir $<)$(notdir $@) $@
 
-bin/data: $(DATA)
 
-serve.lock: vendor/darkhttpd/darkhttpd_ bin/data
-	$(word 1,$^) $(word 2,$^) --port 5050 & echo $$! > $@
+serve.lock: vendor/darkhttpd/darkhttpd_
+	$^ bin/data --port $(SERVER_PORT) & echo $$! > $@
 
 clean:
 	@sudo rm -rf bin/*
@@ -56,7 +68,7 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
-run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes serve.lock
+run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes serve.lock $(DATA)
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
 		--cdrom $< --disk size=10 -w bridge=virbr0
 
