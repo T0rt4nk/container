@@ -46,8 +46,8 @@ $(DATA): $(INITFS) $(KERNEL)
 
 bin/data: $(DATA)
 
-serve: vendor/darkhttpd/darkhttpd_ bin/data
-	$(word 1,$^) $(word 2,$^) --port 5050
+serve.lock: vendor/darkhttpd/darkhttpd_ bin/data
+	$(word 1,$^) $(word 2,$^) --port 5050 & echo $$! > $@
 
 clean:
 	@sudo rm -rf bin/*
@@ -56,9 +56,9 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
-run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes bin/data
+run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes serve.lock
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
-		--cdrom $< --disk size=10
+		--cdrom $< --disk size=10 -w bridge=virbr0
 
 clean.virsh:
 	virsh list | awk '$$2 ~ /ipxe/ {system("virsh destroy " $$2)}'
@@ -67,3 +67,9 @@ clean.virsh:
 clean.volumes:
 	virsh vol-list default | awk \
 		'NR > 2 && NF > 0 {system("xargs virsh vol-delete --pool default " $$1)}'
+
+clean.serve: serve.lock
+	@kill $$(cat $<)
+	@rm $<
+
+test: run.virsh clean.serve
