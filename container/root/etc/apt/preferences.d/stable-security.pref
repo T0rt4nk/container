@@ -1,5 +1,0 @@
-# This file is managed by Puppet. DO NOT EDIT.
-Explanation: apt: stable-security
-Package: *
-Pin: release l=Debian-Security
-Pin-Priority: 1010

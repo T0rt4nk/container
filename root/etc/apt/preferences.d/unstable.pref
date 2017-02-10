@@ -1,4 +1,3 @@
-# This file is managed by Puppet. DO NOT EDIT.
 Explanation: apt: unstable
 Package: *
 Pin: release a=unstable

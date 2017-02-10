@@ -1,5 +1,0 @@
-# This file is managed by Puppet. DO NOT EDIT.
-Explanation: apt: mint
-Package: *
-Pin: release a=sarah
-Pin-Priority: 450

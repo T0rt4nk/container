@@ -2,11 +2,15 @@
 
 BRIDGE_IP = 192.168.122.1
 SERVER_PORT ?= 5050
+ARCH ?= amd64
 
 ISO = vendor/alpine-iso
 
 PROFILE = $(ISO)/alpine-pxe
 ALPINE_REPO = "rsync://rsync.alpinelinux.org/alpine/v3.2/main/x86_64"
+DEBIAN_REPO = "http://ftp.nl.debian.org/debian"
+RSYNC = rsync --archive --update --hard-links --delete --info=progress2 \
+        --delete-after --delay-updates --timeout=600 --human-readable --no-motd
 
 INITFS = $(ISO)/isotmp.alpine-pxe/isofs/boot/initramfs-grsec
 KERNEL = $(ISO)/isotmp.alpine-pxe/isofs/boot/vmlinuz-grsec
@@ -34,24 +38,34 @@ _alpine-pxe: # indirection target BEWARE: use this with caution
 	@touch $(KERNEL) # update the modify time to avoid recompilation
 
 $(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages $(ISO)/init.sh serve.lock bin/data/alpine
-	@CMD="$(MAKE) -C /mnt _alpine-pxe" $(MAKE) chroot
+	@CMD="$(MAKE) -C /mnt _alpine-pxe" $(MAKE) chroot.alpine
 
-chroot: bin/alpine
+chroot.alpine: bin/alpine
 	@sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt $(CMD)
 
+chroot.tortank: bin/tortank
+	@sudo systemd-nspawn -M tortank -D $< $(CMD)
+
+bin/tortank:
+	@mkdir -p $@
+	@sudo /usr/sbin/debootstrap --arch=amd64 testing "$@" $(DEBIAN_REPO)
+
+bin/tortank.tgz: bin/tortank $(shell find root -type f | sed 's/ /\\ /g')
+	@sudo rsync -rltDv --exclude=".gitkeep" "root/" "$</"
+	@sudo systemd-nspawn -M tortank -D "$<" /tmp/setup.sh
+	@sudo tar cvzf $@ $<
+
 bin/alpine:
-	mkdir -p $@
-	wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" | \
+	@mkdir -p $@
+	@wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" | \
 		tar -C "$@" --transform="s|rootfs/|/|" -xzf -
-	echo "http://$(BRIDGE_IP):$(SERVER_PORT)/alpine" > "$@/etc/apk/repositories"
-	sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev
+	@echo "http://$(BRIDGE_IP):$(SERVER_PORT)/alpine" > "$@/etc/apk/repositories"
+	@sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev
 
 bin/data/alpine:
 	# https://wiki.alpinelinux.org/wiki/How_to_setup_a_Alpine_Linux_mirror
 	@mkdir -p "$@"
-	/usr/bin/rsync --archive --update --hard-links --delete --info=progress2 \
-        --delete-after --delay-updates --timeout=600 \
-        $(ALPINE_REPO) "$@"
+	@$(RSYNC) $(ALPINE_REPO) "$@"
 
 $(DATA): $(INITFS) $(KERNEL)
 	@mkdir -p bin/data
@@ -70,7 +84,7 @@ clean:
 
 run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes serve.lock $(DATA)
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
-		--cdrom $< --disk size=10 -w bridge=virbr0
+		--network bridge=virbr0 --cdrom $< --disk size=10
 
 clean.virsh:
 	virsh list | awk '$$2 ~ /ipxe/ {system("virsh destroy " $$2)}'

@@ -1,0 +1,3 @@
+# testing-security
+deb http://security.debian.org/ testing/updates main non-free contrib
+deb-src http://security.debian.org/ testing/updates main non-free contrib

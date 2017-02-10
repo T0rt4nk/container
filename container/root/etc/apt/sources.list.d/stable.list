@@ -1,3 +1,0 @@
-# stable
-deb http://httpredir.debian.org/debian stable main non-free contrib
-deb-src http://httpredir.debian.org/debian stable main non-free contrib

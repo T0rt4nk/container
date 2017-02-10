@@ -1,0 +1,4 @@
+Explanation: apt: testing-security
+Package: *
+Pin: release l=Debian-Security
+Pin-Priority: 1010

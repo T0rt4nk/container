@@ -1,0 +1,3 @@
+# testing-updates
+deb http://httpredir.debian.org/debian testing-updates main non-free contrib
+deb-src http://httpredir.debian.org/debian testing-updates main non-free contrib

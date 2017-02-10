@@ -7,15 +7,15 @@
 [submodule "vendor/darkhttpd"]
 	path = vendor/darkhttpd
 	url = https://github.com/ryanmjacobs/darkhttpd
-[submodule "container/root/home/max/documents/development/dotfiles"]
-	path = container/root/home/max/documents/development/dotfiles
-	url = git@github.com:IxDay/dotfiles.git
-[submodule "container/root/home/max/.config/nvim"]
-	path = container/root/home/max/.config/nvim
-	url = git@github.com:IxDay/.vim.git
 [submodule "vendor/alpine-iso"]
 	path = vendor/alpine-iso
 	url = git://git.alpinelinux.org/alpine-iso
 [submodule "vendor/apk-tools"]
 	path = vendor/apk-tools
 	url = git://git.alpinelinux.org/apk-tools
+[submodule "root/home/max/.config/nvim"]
+	path = root/home/max/.config/nvim
+	url = git@github.com:IxDay/.vim.git
+[submodule "root/home/max/documents/development/dotfiles"]
+	path = root/home/max/documents/development/dotfiles
+	url = https://github.com/IxDay/dotfiles

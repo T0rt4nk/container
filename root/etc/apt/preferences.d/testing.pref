@@ -1,0 +1,4 @@
+Explanation: apt: testing
+Package: *
+Pin: release a=testing
+Pin-Priority: 550

@@ -1,0 +1,4 @@
+Explanation: apt: mint
+Package: *
+Pin: release a=serena
+Pin-Priority: 450

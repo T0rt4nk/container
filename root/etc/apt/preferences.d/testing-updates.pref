@@ -1,0 +1,4 @@
+Explanation: apt: testing-updates
+Package: *
+Pin: release a=testing-updates
+Pin-Priority: 650
