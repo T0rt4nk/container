@@ -1,4 +1,4 @@
-.PHONY: clean
+.PHONY: clean serve
 
 BRIDGE_IP = 192.168.122.1
 SERVER_PORT ?= 5050
@@ -37,7 +37,7 @@ _alpine-pxe: # indirection target BEWARE: use this with caution
 	fakeroot $(MAKE_ALPINE) INITFS_SCRIPT=init.sh
 	@touch $(KERNEL) # update the modify time to avoid recompilation
 
-$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages $(ISO)/init.sh serve.lock bin/data/alpine
+$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages $(ISO)/init.sh bin/data/alpine
 	@CMD="$(MAKE) -C /mnt _alpine-pxe" $(MAKE) chroot.alpine
 
 chroot.alpine: bin/alpine
@@ -72,8 +72,9 @@ $(DATA): $(INITFS) $(KERNEL)
 	@ln -sf $(CURDIR)/$(dir $<)$(notdir $@) $@
 
 
-serve.lock: vendor/darkhttpd/darkhttpd_
-	$^ bin/data --port $(SERVER_PORT) & echo $$! > $@
+serve: vendor/darkhttpd/darkhttpd_
+	@echo Serve bin/data on port $(SERVER_PORT)
+	@$^ bin/data --port $(SERVER_PORT) > /dev/null &
 
 clean:
 	@sudo rm -rf bin/*
@@ -82,7 +83,7 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
-run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes serve.lock $(DATA)
+run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes $(DATA)
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
 		--network bridge=virbr0 --cdrom $< --disk size=10
 
@@ -94,8 +95,5 @@ clean.volumes:
 	virsh vol-list default | awk \
 		'NR > 2 && NF > 0 {system("xargs virsh vol-delete --pool default " $$1)}'
 
-clean.serve: serve.lock
-	@kill $$(cat $<)
-	@rm $<
 
-test: run.virsh clean.serve
+test: run.virsh
