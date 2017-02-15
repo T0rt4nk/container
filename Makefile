@@ -50,7 +50,7 @@ bin/tortank:
 	@mkdir -p $@
 	@sudo /usr/sbin/debootstrap --arch=amd64 testing "$@" $(DEBIAN_REPO)
 
-bin/tortank.tgz: bin/tortank $(shell find root -type f | sed 's/ /\\ /g')
+bin/data/tortank.tgz: bin/tortank $(shell find root -type f | sed 's/ /\\ /g')
 	@sudo rsync -rltDv --exclude=".gitkeep" "root/" "$</"
 	@sudo systemd-nspawn -M tortank -D "$<" /tmp/setup.sh
 	@sudo tar cvzf $@ $<
@@ -94,6 +94,5 @@ clean.virsh:
 clean.volumes:
 	virsh vol-list default | awk \
 		'NR > 2 && NF > 0 {system("xargs virsh vol-delete --pool default " $$1)}'
-
 
 test: run.virsh
