@@ -7,41 +7,59 @@ ARCH ?= amd64
 ISO = vendor/alpine-iso
 
 PROFILE = $(ISO)/alpine-pxe
+
+DATA_DIR = bin/data
 ALPINE_REPO = "rsync://rsync.alpinelinux.org/alpine/v3.2/main/x86_64"
 DEBIAN_REPO = "http://ftp.nl.debian.org/debian"
 RSYNC = rsync --archive --update --hard-links --delete --info=progress2 \
         --delete-after --delay-updates --timeout=600 --human-readable --no-motd
 
-INITFS = $(ISO)/isotmp.alpine-pxe/isofs/boot/initramfs-grsec
-KERNEL = $(ISO)/isotmp.alpine-pxe/isofs/boot/vmlinuz-grsec
+APK_OPTS = --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories
+APK_FETCH_STDOUT = apk fetch $(APK_OPTS) --stdout --quiet
 
-DATA = bin/data/initramfs-grsec bin/data/vmlinuz-grsec
+NO_ECHO = >/dev/null 2>/dev/null
+
+INITFS = $(DATA_DIR)/initramfs-grsec
+KERNEL = $(DATA_DIR)/vmlinuz-grsec
 MAKE_ALPINE = $(MAKE) -C $(ISO) PROFILE=alpine-pxe
 
 all: ipxe darkhttpd $(INITFS) $(KERNEL)
 
 ipxe: vendor/ipxe/src/bin/ipxe.iso # alias
 
-vendor/ipxe/src/bin/ipxe.iso: vendor/ipxe/src/ipxelinux.0
-	$(MAKE) -C vendor/ipxe/src bin/ipxe.iso EMBED=ipxelinux.0
+vendor/ipxe/src/bin/ipxe.iso: assets/ipxelinux.0
+	$(MAKE) -C vendor/ipxe/src bin/ipxe.iso EMBED=$(CURDIR)/assets/ipxelinux.0
 
 darkhttpd: vendor/darkhttpd/darkhttpd_ # alias
 
 vendor/darkhttpd/darkhttpd_:
 	$(MAKE) -C $(dir $@)
 
-_alpine-pxe: # indirection target BEWARE: use this with caution
-	$(MAKE_ALPINE) clean
+_kernel: # indirection target BEWARE: use this with caution
+	@$(APK_FETCH_STDOUT) linux-grsec | \
+		tar -C /mnt/$(DATA_DIR) --transform="s|boot/|/|" -xz boot/vmlinuz-grsec \
+		$(NO_ECHO)
+
+INITFS_TMP	= bin/tmp.initfs
+_initfs: assets/init.sh # indirection target BEWARE: use this with caution
 	apk update
 	abuild-keygen -ina
-	fakeroot $(MAKE_ALPINE) INITFS_SCRIPT=init.sh
-	@touch $(KERNEL) # update the modify time to avoid recompilation
+	apk add $(APK_OPTS) \
+		--initdb \
+		--update \
+		--no-script \
+		--root $(INITFS_TMP) \
+		linux-grsec linux-firmware dahdi-linux alpine-base acct mdadm
+	mkinitfs -F "ata base bootchart squashfs ext2 ext3 ext4 network dhcp scsi" \
+		-b $(INITFS_TMP) -o $(INITFS) -i $< -k \
+		$(notdir $(wildcard $(INITFS_TMP)/lib/modules/*))
+	@rm -rf $(INITFS_TMP)
 
-$(INITFS) $(KERNEL): $(PROFILE).conf.mk $(PROFILE).packages $(ISO)/init.sh bin/data/alpine
-	@CMD="$(MAKE) -C /mnt _alpine-pxe" $(MAKE) chroot.alpine
+$(KERNEL):
+	CMD="$(MAKE) -C /mnt _kernel" $(MAKE) chroot.alpine
 
-chroot.alpine: bin/alpine
-	@sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt $(CMD)
+$(INITFS): assets/init.sh
+	CMD="$(MAKE) -C /mnt _initfs" $(MAKE) chroot.alpine
 
 chroot.tortank: bin/tortank
 	@sudo systemd-nspawn -M tortank -D $< $(CMD)
@@ -50,10 +68,13 @@ bin/tortank:
 	@mkdir -p $@
 	@sudo /usr/sbin/debootstrap --arch=amd64 testing "$@" $(DEBIAN_REPO)
 
-bin/data/tortank.tgz: bin/tortank $(shell find root -type f | sed 's/ /\\ /g')
+$(DATA_DIR)/tortank.tgz: bin/tortank $(shell find root -type f | sed 's/ /\\ /g')
 	@sudo rsync -rltDv --exclude=".gitkeep" "root/" "$</"
 	@sudo systemd-nspawn -M tortank -D "$<" /tmp/setup.sh
 	@sudo tar cvzf $@ $<
+
+chroot.alpine: bin/alpine
+	@sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt $(CMD)
 
 bin/alpine:
 	@mkdir -p $@
@@ -62,19 +83,17 @@ bin/alpine:
 	@echo "http://$(BRIDGE_IP):$(SERVER_PORT)/alpine" > "$@/etc/apk/repositories"
 	@sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev
 
-bin/data/alpine:
+$(DATA_DIR)/alpine:
 	# https://wiki.alpinelinux.org/wiki/How_to_setup_a_Alpine_Linux_mirror
 	@mkdir -p "$@"
 	@$(RSYNC) $(ALPINE_REPO) "$@"
 
-$(DATA): $(INITFS) $(KERNEL)
-	@mkdir -p bin/data
-	@ln -sf $(CURDIR)/$(dir $<)$(notdir $@) $@
-
+$(DATA_DIR)/setup-disk.sh: assets/setup-disk.sh
+	cp $< $@
 
 serve: vendor/darkhttpd/darkhttpd_
-	@echo Serve bin/data on port $(SERVER_PORT)
-	@$^ bin/data --port $(SERVER_PORT) > /dev/null &
+	@echo Serve $(DATA_DIR) on port $(SERVER_PORT)
+	@$^ $(DATA_DIR) --port $(SERVER_PORT) > /dev/null &
 
 clean:
 	@sudo rm -rf bin/*
@@ -83,7 +102,7 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
-run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes $(DATA)
+run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes $(INITFS) $(KERNEL)
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
 		--network bridge=virbr0 --cdrom $< --disk size=10
 

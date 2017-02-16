@@ -1,18 +1,9 @@
-[submodule "ipxe/ipxe.git"]
-	path = ipxe/ipxe.git
-	url = git://git.ipxe.org/ipxe.git
 [submodule "vendor/ipxe"]
 	path = vendor/ipxe
 	url = git://git.ipxe.org/ipxe.git
 [submodule "vendor/darkhttpd"]
 	path = vendor/darkhttpd
 	url = https://github.com/ryanmjacobs/darkhttpd
-[submodule "vendor/alpine-iso"]
-	path = vendor/alpine-iso
-	url = git://git.alpinelinux.org/alpine-iso
-[submodule "vendor/apk-tools"]
-	path = vendor/apk-tools
-	url = git://git.alpinelinux.org/apk-tools
 [submodule "root/home/max/.config/nvim"]
 	path = root/home/max/.config/nvim
 	url = git@github.com:IxDay/.vim.git
