@@ -27,8 +27,9 @@ vendor/ipxe/src/bin/ipxe.iso: assets/ipxelinux.0
 
 darkhttpd: vendor/darkhttpd/darkhttpd_ # alias
 
-vendor/darkhttpd/darkhttpd_:
-	$(MAKE) -C $(dir $@)
+bin/darkhttpd:
+	$(MAKE) -C vendor/darkhttpd
+	mv vendor/darkhttpd/darkhttpd_ $@
 
 _kernel: # indirection target BEWARE: use this with caution
 	@$(APK_FETCH_STDOUT) linux-grsec | \
@@ -90,7 +91,7 @@ $(DATA_DIR)/alpine:
 $(DISK): assets/setup-disk.sh
 	cp $< $@
 
-serve: vendor/darkhttpd/darkhttpd_
+serve: bin/darkhttpd
 	@echo Serve $(DATA_DIR) on port $(SERVER_PORT)
 	@-$^ $(DATA_DIR) --port $(SERVER_PORT) $(NO_ECHO) &
 
