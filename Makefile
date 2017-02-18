@@ -2,11 +2,6 @@
 
 BRIDGE_IP = 192.168.122.1
 SERVER_PORT ?= 5050
-ARCH ?= amd64
-
-ISO = vendor/alpine-iso
-
-PROFILE = $(ISO)/alpine-pxe
 
 DATA_DIR = bin/data
 ALPINE_REPO = "rsync://rsync.alpinelinux.org/alpine/v3.2/main/x86_64"
@@ -21,9 +16,9 @@ NO_ECHO = >/dev/null 2>/dev/null
 
 INITFS = $(DATA_DIR)/initramfs-grsec
 KERNEL = $(DATA_DIR)/vmlinuz-grsec
-MAKE_ALPINE = $(MAKE) -C $(ISO) PROFILE=alpine-pxe
+DISK =  $(DATA_DIR)/setup-disk.sh
 
-all: ipxe darkhttpd $(INITFS) $(KERNEL)
+all: serve ipxe darkhttpd $(INITFS) $(KERNEL)
 
 ipxe: vendor/ipxe/src/bin/ipxe.iso # alias
 
@@ -41,19 +36,23 @@ _kernel: # indirection target BEWARE: use this with caution
 		$(NO_ECHO)
 
 INITFS_TMP	= bin/tmp.initfs
-_initfs: assets/init.sh # indirection target BEWARE: use this with caution
-	apk update
-	abuild-keygen -ina
+INITFS_KERNELSTAMP = $(INITFS_TMP)/usr/share/kernel/grsec/kernel.release
+
+$(INITFS_KERNELSTAMP):
 	apk add $(APK_OPTS) \
 		--initdb \
 		--update \
 		--no-script \
 		--root $(INITFS_TMP) \
 		linux-grsec linux-firmware dahdi-linux alpine-base acct mdadm
+
+_initfs: assets/init.sh $(INITFS_KERNELSTAMP) # indirection target BEWARE: use this with caution
 	mkinitfs -F "ata base bootchart squashfs ext2 ext3 ext4 network dhcp scsi" \
-		-b $(INITFS_TMP) -o $(INITFS) -i $< -k \
-		$(notdir $(wildcard $(INITFS_TMP)/lib/modules/*))
-	@rm -rf $(INITFS_TMP)
+		-b $(INITFS_TMP) -o $(INITFS) -i $< $(shell cat $(INITFS_KERNELSTAMP))
+	cd $(INITFS_TMP) && rm -rf * && zcat $(CURDIR)/$(INITFS) | cpio -idmv $(NO_ECHO)
+	apk add $(APK_OPTS) --initdb --update --root $(INITFS_TMP) e2fsprogs
+	cd $(INITFS_TMP) && find . | cpio --quiet -o -H newc | gzip -9 > $(CURDIR)/$(INITFS)
+	rm -rf $(INITFS_TMP)
 
 $(KERNEL):
 	CMD="$(MAKE) -C /mnt _kernel" $(MAKE) chroot.alpine
@@ -76,35 +75,34 @@ $(DATA_DIR)/tortank.tgz: bin/tortank $(shell find root -type f | sed 's/ /\\ /g'
 chroot.alpine: bin/alpine
 	@sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt $(CMD)
 
-bin/alpine:
+bin/alpine: $(DATA_DIR)/alpine
 	@mkdir -p $@
 	@wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" | \
 		tar -C "$@" --transform="s|rootfs/|/|" -xzf -
 	@echo "http://$(BRIDGE_IP):$(SERVER_PORT)/alpine" > "$@/etc/apk/repositories"
-	@sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev
+	@sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev tar
 
 $(DATA_DIR)/alpine:
 	# https://wiki.alpinelinux.org/wiki/How_to_setup_a_Alpine_Linux_mirror
 	@mkdir -p "$@"
 	@$(RSYNC) $(ALPINE_REPO) "$@"
 
-$(DATA_DIR)/setup-disk.sh: assets/setup-disk.sh
+$(DISK): assets/setup-disk.sh
 	cp $< $@
 
 serve: vendor/darkhttpd/darkhttpd_
 	@echo Serve $(DATA_DIR) on port $(SERVER_PORT)
-	@$^ $(DATA_DIR) --port $(SERVER_PORT) > /dev/null &
+	@-$^ $(DATA_DIR) --port $(SERVER_PORT) $(NO_ECHO) &
 
 clean:
 	@sudo rm -rf bin/*
-	@sudo $(MAKE_ALPINE) clean 2> /dev/null
 	@for dir in vendor/ipxe/src vendor/darkhttpd; do \
 		$(MAKE) -C $$dir clean; \
 	done
 
-run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes $(INITFS) $(KERNEL)
+run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes $(INITFS) $(KERNEL) $(DISK)
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
-		--network bridge=virbr0 --cdrom $< --disk size=10
+		--network=default --cdrom $< --disk size=10
 
 clean.virsh:
 	virsh list | awk '$$2 ~ /ipxe/ {system("virsh destroy " $$2)}'
@@ -114,4 +112,4 @@ clean.volumes:
 	virsh vol-list default | awk \
 		'NR > 2 && NF > 0 {system("xargs virsh vol-delete --pool default " $$1)}'
 
-test: run.virsh
+test: serve run.virsh
