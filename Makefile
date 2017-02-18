@@ -16,7 +16,6 @@ NO_ECHO = >/dev/null 2>/dev/null
 
 INITFS = $(DATA_DIR)/initramfs-grsec
 KERNEL = $(DATA_DIR)/vmlinuz-grsec
-DISK =  $(DATA_DIR)/setup-disk.sh
 
 all: serve ipxe darkhttpd $(INITFS) $(KERNEL)
 
@@ -62,19 +61,19 @@ $(INITFS): assets/init.sh
 	CMD="$(MAKE) -C /mnt _initfs" $(MAKE) chroot.alpine
 
 chroot.tortank: bin/tortank
-	@sudo systemd-nspawn -M tortank -D $< $(CMD)
+	@sudo systemd-nspawn -M tortank -D $< --bind=$(CURDIR):/mnt $(CMD)
 
 bin/tortank:
 	@mkdir -p $@
 	@sudo /usr/sbin/debootstrap --arch=amd64 testing "$@" $(DEBIAN_REPO)
 
-$(DATA_DIR)/tortank.tgz: bin/tortank $(shell find root -type f | sed 's/ /\\ /g')
+$(DATA_DIR)/tortank.tgz: bin/tortank assets/setup.sh $(shell find root -type f | sed 's/ /\\ /g')
 	@sudo rsync -rltDv --exclude=".gitkeep" "root/" "$</"
-	@sudo systemd-nspawn -M tortank -D "$<" /tmp/setup.sh
-	@sudo tar cvzf $@ $<
+	@CMD="/mnt/$(word 2,$^)" $(MAKE) chroot.tortank
+	@sudo tar --transform="s|$</|/|" -cvzf $@ $<
 
 chroot.alpine: bin/alpine
-	@sudo systemd-nspawn -M alpine -D $^ --bind=$(CURDIR):/mnt $(CMD)
+	@sudo systemd-nspawn -M alpine -D $< --bind=$(CURDIR):/mnt $(CMD)
 
 bin/alpine: $(DATA_DIR)/alpine
 	@mkdir -p $@
@@ -88,7 +87,7 @@ $(DATA_DIR)/alpine:
 	@mkdir -p "$@"
 	@$(RSYNC) $(ALPINE_REPO) "$@"
 
-$(DISK): assets/setup-disk.sh
+$(DATA_DIR)/setup-disk.sh: assets/setup-disk.sh
 	cp $< $@
 
 serve: bin/darkhttpd
@@ -101,7 +100,8 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
-run.virsh: vendor/ipxe/src/bin/ipxe.iso clean.virsh clean.volumes $(INITFS) $(KERNEL) $(DISK)
+DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.tgz
+run.virsh: vendor/ipxe/src/bin/ipxe.iso $(DATA) clean.virsh clean.volumes
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
 		--network=default --cdrom $< --disk size=10
 

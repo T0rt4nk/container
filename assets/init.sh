@@ -2,7 +2,7 @@
 
 SERVER_IP=192.168.122.1
 SERVER_PORT=5050
-MOUNT_POINT="/mnt/root"
+export MOUNT_POINT="/mnt/"
 
 /bin/busybox mkdir -p /usr/bin /usr/sbin /proc /sys /dev /media/cdrom \
 	/media/usb /tmp
@@ -50,8 +50,8 @@ echo "Obtaining IP via DHCP ($device)..."
 ifconfig $device 0.0.0.0
 udhcpc -i $device -f -q
 
+mkdir -p "$MOUNT_POINT"
 wget -O - "$SERVER_IP:$SERVER_PORT/setup-disk.sh" | sh
-#wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | \
-	#tar -C "" --transform="s|rootfs/|/|" -xzf -
+wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | tar -C "$MOUNT_POINT" -xzf -
 
 exec /bin/busybox sh

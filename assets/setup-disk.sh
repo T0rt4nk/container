@@ -23,3 +23,5 @@ sleep 2
 
 mkswap /dev/sda1
 mkfs.ext4 /dev/sda2
+swapon /dev/sda1
+mount -t ext4 /dev/sda2 "$MOUNT_POINT"
