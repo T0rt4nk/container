@@ -1,8 +1,10 @@
 #!/bin/sh
+set -x
 
 SERVER_IP=192.168.122.1
 SERVER_PORT=5050
-export MOUNT_POINT="/mnt/"
+MOUNT_POINT="/mnt/"
+
 
 /bin/busybox mkdir -p /usr/bin /usr/sbin /proc /sys /dev /media/cdrom \
 	/media/usb /tmp
@@ -10,6 +12,10 @@ export MOUNT_POINT="/mnt/"
 
 # basic environment
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export MOUNT_POINT
+
+# hide kernel messages
+dmesg -n 1
 
 # needed devs
 [ -c /dev/null ] || mknod -m 666 /dev/null c 1 3
@@ -52,6 +58,16 @@ udhcpc -i $device -f -q
 
 mkdir -p "$MOUNT_POINT"
 wget -O - "$SERVER_IP:$SERVER_PORT/setup-disk.sh" | sh
-wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | tar -C "$MOUNT_POINT" -xzf -
+wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | \
+	tar -C "$MOUNT_POINT" --skip-old-files -xzf -
 
-exec /bin/busybox sh
+for DIR in dev dev/pts proc sys
+do
+	mkdir -p "$MOUNT_POINT/$DIR"
+	mount --bind "/$DIR" "$MOUNT_POINT/$DIR"
+done
+
+chroot /mnt apt-get install -y "linux-image-amd64"
+chroot /mnt grub-install /dev/sda
+chroot /mnt update-grub
+echo b >/proc/sysrq-trigger

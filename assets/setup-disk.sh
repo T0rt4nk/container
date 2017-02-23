@@ -1,5 +1,7 @@
 #!/bin/sh
 
+FSTAB="${MOUNT_POINT}/etc/fstab"
+
 sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk /dev/sda
   o # clear the in memory partition table
   n # new partition
@@ -25,3 +27,9 @@ mkswap /dev/sda1
 mkfs.ext4 /dev/sda2
 swapon /dev/sda1
 mount -t ext4 /dev/sda2 "$MOUNT_POINT"
+
+mkdir -p $(dirname "$FSTAB")
+cat > "$FSTAB" << EOF
+# <target name>   <source device>   <key file>   <options>
+/dev/sda2         /	                ext4         defaults  0 1
+EOF
