@@ -6,16 +6,15 @@ SERVER_PORT ?= 5050
 DATA_DIR = bin/data
 ALPINE_REPO = "rsync://rsync.alpinelinux.org/alpine/v3.2/main/x86_64"
 DEBIAN_REPO = "http://ftp.nl.debian.org/debian"
+
 RSYNC = rsync --archive --update --hard-links --delete --info=progress2 \
         --delete-after --delay-updates --timeout=600 --human-readable --no-motd
-
 APK_OPTS = --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories
 APK_FETCH_STDOUT = apk fetch $(APK_OPTS) --stdout --quiet
-
 NO_ECHO = >/dev/null 2>/dev/null
 
-INITFS = $(DATA_DIR)/initramfs-grsec
-KERNEL = $(DATA_DIR)/vmlinuz-grsec
+INITFS = $(DATA_DIR)/initramfs
+KERNEL = $(DATA_DIR)/vmlinuz
 
 all: serve ipxe darkhttpd $(INITFS) $(KERNEL)
 
@@ -31,12 +30,12 @@ bin/darkhttpd:
 	mv vendor/darkhttpd/darkhttpd_ $@
 
 _kernel: # indirection target BEWARE: use this with caution
-	@$(APK_FETCH_STDOUT) linux-grsec | \
-		tar -C /mnt/$(DATA_DIR) --transform="s|boot/|/|" -xz boot/vmlinuz-grsec \
+	@$(APK_FETCH_STDOUT) linux-vanilla | \
+		tar -C /mnt/$(DATA_DIR) --transform="s|boot/|/|" -xz boot/vmlinuz \
 		$(NO_ECHO)
 
 INITFS_TMP	= bin/tmp.initfs
-INITFS_KERNELSTAMP = $(INITFS_TMP)/usr/share/kernel/grsec/kernel.release
+INITFS_KERNELSTAMP = $(INITFS_TMP)/usr/share/kernel/vanilla/kernel.release
 
 $(INITFS_KERNELSTAMP):
 	apk add $(APK_OPTS) \
@@ -44,7 +43,7 @@ $(INITFS_KERNELSTAMP):
 		--update \
 		--no-script \
 		--root $(INITFS_TMP) \
-		linux-grsec linux-firmware dahdi-linux alpine-base acct mdadm
+		linux-vanilla linux-firmware dahdi-linux alpine-base acct mdadm
 
 _initfs: assets/init.sh $(INITFS_KERNELSTAMP) # indirection target BEWARE: use this with caution
 	mkinitfs -F "ata base bootchart squashfs ext2 ext3 ext4 network dhcp scsi" \
@@ -86,6 +85,7 @@ $(DATA_DIR)/alpine:
 	# https://wiki.alpinelinux.org/wiki/How_to_setup_a_Alpine_Linux_mirror
 	@mkdir -p "$@"
 	@$(RSYNC) $(ALPINE_REPO) "$@"
+
 
 $(DATA_DIR)/setup-disk.sh: assets/setup-disk.sh
 	cp $< $@
