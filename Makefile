@@ -94,11 +94,14 @@ serve: bin/darkhttpd
 	@echo Serve $(DATA_DIR) on port $(SERVER_PORT)
 	@-$^ $(DATA_DIR) --port $(SERVER_PORT) $(NO_ECHO) &
 
-clean:
+dist-clean:
 	@sudo rm -rf bin/*
 	@for dir in vendor/ipxe/src vendor/darkhttpd; do \
 		$(MAKE) -C $$dir clean; \
 	done
+
+clean:
+	@sudo rm -rf $(INITFS) $(KERNEL) bin/alpine
 
 DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.tgz
 run.virsh: vendor/ipxe/src/bin/ipxe.iso $(DATA) clean.virsh clean.volumes
