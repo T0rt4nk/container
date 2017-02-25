@@ -57,4 +57,5 @@ udhcpc -i $device -f -q
 mkdir -p "$MOUNT_POINT"
 wget -O - "$SERVER_IP:$SERVER_PORT/setup-disk.sh" | sh
 
-exec sh
+sync
+echo b > /proc/sysrq-trigger

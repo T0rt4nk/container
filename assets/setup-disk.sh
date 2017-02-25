@@ -21,7 +21,7 @@ sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk /dev/sda
   q # and we're done
 EOF
 
-sleep 2
+sync
 
 mkswap /dev/sda1
 mkfs.ext4 /dev/sda2
