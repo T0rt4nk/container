@@ -112,9 +112,11 @@ clean:
 DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.tgz
 bin/ipxe.qcow2: vendor/ipxe/src/bin/ipxe.iso $(DATA)
 	$(MAKE) serve clean-virsh
-	virt-install --name ipxe --memory 1024 --virt-type kvm --network=default \
+	virt-install --name ipxe --memory 1024 --virt-type kvm  \
+		--network bridge=virbr0 --network=default \
 		--cdrom $< --disk path=$(CURDIR)/$@,size=10 --noautoconsole
 	virsh console --domain ipxe
+	virsh detach-interface --domain ipxe --type user --config $(NO_ECHO)
 
 test: bin/ipxe.qcow2
 	@-virsh start ipxe
