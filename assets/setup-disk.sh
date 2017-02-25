@@ -28,12 +28,6 @@ mkfs.ext4 /dev/sda2
 swapon /dev/sda1
 mount -t ext4 /dev/sda2 "$MOUNT_POINT"
 
-mkdir -p $(dirname "$FSTAB")
-cat > "$FSTAB" << EOF
-# <target name>   <source device>   <key file>   <options>
-/dev/sda2         /	                ext4         defaults  0 1
-EOF
-
 for DIR in dev dev/pts proc sys
 do
 	mkdir -p "$MOUNT_POINT/$DIR"
@@ -42,6 +36,12 @@ done
 
 wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | \
 	tar -C "$MOUNT_POINT" -xzf -
+
+cat > "$FSTAB" << EOF
+# <target name>   <source device>   <key file>   <options>
+/dev/sda2         /	                ext4         defaults  0 1
+EOF
+
 
 chroot /mnt grub-install /dev/sda
 chroot /mnt update-grub
