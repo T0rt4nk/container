@@ -1,18 +1,15 @@
 #!/bin/sh
 set -x
 
-SERVER_IP=192.168.122.1
-SERVER_PORT=5050
-MOUNT_POINT="/mnt/"
-
+# basic environment
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export SERVER_IP=192.168.122.1
+export SERVER_PORT=5050
+export MOUNT_POINT="/mnt/"
 
 /bin/busybox mkdir -p /usr/bin /usr/sbin /proc /sys /dev /media/cdrom \
 	/media/usb /tmp
 /bin/busybox --install -s
-
-# basic environment
-export PATH=/usr/bin:/bin:/usr/sbin:/sbin
-export MOUNT_POINT
 
 # hide kernel messages
 dmesg -n 1
@@ -50,7 +47,8 @@ done
 if [ -z "$device" ]
 then
 	echo "ERROR: IP requested but no network device was found"
-	exit 1
+	exec sh
+
 fi
 echo "Obtaining IP via DHCP ($device)..."
 ifconfig $device 0.0.0.0
@@ -58,16 +56,5 @@ udhcpc -i $device -f -q
 
 mkdir -p "$MOUNT_POINT"
 wget -O - "$SERVER_IP:$SERVER_PORT/setup-disk.sh" | sh
-wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | \
-	tar -C "$MOUNT_POINT" --skip-old-files -xzf -
 
-for DIR in dev dev/pts proc sys
-do
-	mkdir -p "$MOUNT_POINT/$DIR"
-	mount --bind "/$DIR" "$MOUNT_POINT/$DIR"
-done
-
-chroot /mnt apt-get install -y "linux-image-amd64"
-chroot /mnt grub-install /dev/sda
-chroot /mnt update-grub
-echo b >/proc/sysrq-trigger
+exec sh

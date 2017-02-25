@@ -27,8 +27,9 @@ dpkg --add-architecture i386
 apt-get update && apt-get $APT_OPTIONS dist-upgrade
 
 declare packages=(
-	"locales" "git" "tig" "zsh" "tmux" "ranger" "make" "apt-file" "rxvt-unicode-256color"
-	"google-chrome-stable" "grub2" "ssh" "vim" "steam"
+	"linux-image-amd64" "locales"
+	"git" "tig" "zsh" "tmux" "ranger" "make" "apt-file" "rxvt-unicode-256color"
+	"grub2" "ssh" "vim" "steam"
 	# Python
 	"python-pip" "python-dev" "ipython" "python-pip-whl"
 	# Cinnamon
@@ -56,11 +57,13 @@ ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
 dpkg-reconfigure --frontend=noninteractive tzdata
 dpkg-reconfigure --frontend=noninteractive locales
 
-useradd -s /usr/bin/zsh -g users -G sudo max
-chown -R max:users /home/max
-sudo -u max xdg-user-dirs-update
-sudo -u max vim +PluginInstall +qall
-cd /home/max/documents/development/dotfiles && sudo -u max make && cd -
-trap "passwd max" EXIT
+if ! getent passwd max; then
+    useradd -s /usr/bin/zsh -g users -G sudo max
+    chown -R max:users /home/max
+    sudo -u max xdg-user-dirs-update
+    sudo -u max vim +PluginInstall +qall
+    cd /home/max/documents/development/dotfiles && sudo -u max make && cd -
+    trap "passwd max" EXIT
+fi
 
 rm /usr/sbin/policy-rc.d

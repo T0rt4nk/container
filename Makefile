@@ -49,7 +49,7 @@ _initfs: assets/init.sh $(INITFS_KERNELSTAMP) # indirection target BEWARE: use 
 	mkinitfs -F "ata base bootchart squashfs ext2 ext3 ext4 network dhcp scsi" \
 		-b $(INITFS_TMP) -o $(INITFS) -i $< $(shell cat $(INITFS_KERNELSTAMP))
 	cd $(INITFS_TMP) && rm -rf * && zcat $(CURDIR)/$(INITFS) | cpio -idmv $(NO_ECHO)
-	apk add $(APK_OPTS) --initdb --update --root $(INITFS_TMP) e2fsprogs tar
+	apk add $(APK_OPTS) --initdb --update --root $(INITFS_TMP) e2fsprogs
 	cd $(INITFS_TMP) && find . | cpio --quiet -o -H newc | gzip -9 > $(CURDIR)/$(INITFS)
 	rm -rf $(INITFS_TMP)
 

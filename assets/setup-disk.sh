@@ -33,3 +33,15 @@ cat > "$FSTAB" << EOF
 # <target name>   <source device>   <key file>   <options>
 /dev/sda2         /	                ext4         defaults  0 1
 EOF
+
+for DIR in dev dev/pts proc sys
+do
+	mkdir -p "$MOUNT_POINT/$DIR"
+	mount --bind "/$DIR" "$MOUNT_POINT/$DIR"
+done
+
+wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | \
+	tar -C "$MOUNT_POINT" -xzf -
+
+chroot /mnt grub-install /dev/sda
+chroot /mnt update-grub
