@@ -49,8 +49,8 @@ debconf-set-selections <<< "steam      steam/purge     note    "
 debconf-set-selections <<< "steam      steam/license   note    "
 debconf-set-selections <<< "steam      steam/question  select I AGREE"
 
-apt-get $APT_OPTIONS install "${packages[@]}"
-pip install "${packages_pip[@]}"
+apt-get $APT_OPTIONS install "${packages[@]}" && apt-get clean
+pip install --no-cache-dir "${packages_pip[@]}"
 
 ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
 
