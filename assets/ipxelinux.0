@@ -3,7 +3,7 @@ dhcp
 
 set base-url http://192.168.122.1:5050
 
-kernel ${base-url}/vmlinuz
+kernel ${base-url}/vmlinuz console=ttyS0,9600n8
 initrd ${base-url}/initramfs
 
 boot

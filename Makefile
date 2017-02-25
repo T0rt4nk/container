@@ -106,7 +106,8 @@ clean:
 DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.tgz
 run.virsh: vendor/ipxe/src/bin/ipxe.iso $(DATA) clean.virsh clean.volumes
 	virt-install --name ipxe --memory 1024 --virt-type kvm \
-		--network=default --cdrom $< --disk size=10
+		--network=default --cdrom $< --disk size=10 --noautoconsole
+	virsh console --domain ipxe
 
 clean.virsh:
 	virsh list | awk '$$2 ~ /ipxe/ {system("virsh destroy " $$2)}'
