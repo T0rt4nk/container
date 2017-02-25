@@ -1,4 +1,4 @@
-.PHONY: clean serve
+.PHONY: clean clean-virsh clean-all serve
 
 BRIDGE_IP = 192.168.122.1
 SERVER_PORT ?= 5050
@@ -94,27 +94,28 @@ serve: bin/darkhttpd
 	@echo Serve $(DATA_DIR) on port $(SERVER_PORT)
 	@-$^ $(DATA_DIR) --port $(SERVER_PORT) $(NO_ECHO) &
 
-dist-clean:
+clean-all:
 	@sudo rm -rf bin/*
 	@for dir in vendor/ipxe/src vendor/darkhttpd; do \
 		$(MAKE) -C $$dir clean; \
 	done
+	$(MAKE) clean-virsh
+
+clean-virsh:
+	@-virsh destroy ipxe $(NO_ECHO)
+	@-virsh undefine ipxe $(NO_ECHO)
+	@-rm -f bin/ipxe.qcow2
 
 clean:
 	@sudo rm -rf $(INITFS) $(KERNEL) bin/alpine
 
 DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.tgz
-run.virsh: vendor/ipxe/src/bin/ipxe.iso $(DATA) clean.virsh clean.volumes
-	virt-install --name ipxe --memory 1024 --virt-type kvm \
-		--network=default --cdrom $< --disk size=10 --noautoconsole
+bin/ipxe.qcow2: vendor/ipxe/src/bin/ipxe.iso $(DATA)
+	$(MAKE) serve clean-virsh
+	virt-install --name ipxe --memory 1024 --virt-type kvm --network=default \
+		--cdrom $< --disk path=$(CURDIR)/$@,size=10 --noautoconsole
 	virsh console --domain ipxe
 
-clean.virsh:
-	virsh list | awk '$$2 ~ /ipxe/ {system("virsh destroy " $$2)}'
-	virsh list --all | awk '$$2 ~ /ipxe/ {system("virsh undefine " $$2)}'
-
-clean.volumes:
-	virsh vol-list default | awk \
-		'NR > 2 && NF > 0 {system("xargs virsh vol-delete --pool default " $$1)}'
-
-test: serve run.virsh
+test: bin/ipxe.qcow2
+	@-virsh start ipxe
+	@virt-viewer ipxe $(NO_ECHO)
