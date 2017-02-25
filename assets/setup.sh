@@ -18,9 +18,8 @@ chmod +x /usr/sbin/policy-rc.d
 # fix some issues with with gpg
 apt-get $APT_OPTIONS remove gnupg && apt-get update && apt-get $APT_OPTIONS install gnupg2
 
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A6616109451BBBF2
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A040830F7FAC5991
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1397BC53640DB551
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys \
+	A6616109451BBBF2 A040830F7FAC5991 1397BC53640DB551
 
 dpkg --add-architecture i386
 
@@ -35,7 +34,7 @@ declare packages=(
 	# Cinnamon
 	"xserver-xorg" "x11-xserver-utils" "xfonts-base" "xinit"
     "lightdm-gtk-greeter" "cinnamon-core" "libgl1-mesa-dri" "dmz-cursor-theme"
-    "nvidia-driver"
+    "nvidia-driver" "plymouth"
 	"neovim"
 )
 declare packages_pip=("pdbpp" "path.py")
