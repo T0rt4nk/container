@@ -69,7 +69,7 @@ bin/tortank:
 $(DATA_DIR)/tortank.tgz: bin/tortank assets/setup.sh $(shell find root -type f | sed 's/ /\\ /g')
 	@sudo rsync -rltDv --exclude=".gitkeep" "root/" "$</"
 	@CMD="/mnt/$(word 2,$^)" $(MAKE) chroot.tortank
-	@sudo tar --use-compress-program=pigz --transform="s|$</|/|" -czf $@ $<
+	@sudo tar --transform="s|$</|/|" --use-compress-program=pigz -cf $@ $<
 
 DELETE = /etc/X11/xorg.conf.d/20-nvidia.conf /etc/modules-load.d/nvidia.conf \
 		 /etc/modprobe.d/nvidia.conf
@@ -118,7 +118,7 @@ DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.test.tg
 bin/ipxe.qcow2: vendor/ipxe/src/bin/ipxe.iso $(DATA)
 	$(MAKE) serve clean-virsh
 	virt-install --name ipxe --memory 1024 --virt-type kvm  \
-		--network bridge=virbr0 --network=default \
+		--network=default --network bridge=virbr0 \
 		--cdrom $< --disk path=$(CURDIR)/$@,size=10 --noautoconsole
 	virsh console --domain ipxe
 	virsh detach-interface --domain ipxe --type user --config $(NO_ECHO)
