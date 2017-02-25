@@ -34,7 +34,7 @@ do
 	mount --bind "/$DIR" "$MOUNT_POINT/$DIR"
 done
 
-wget -O - "$SERVER_IP:$SERVER_PORT/tortank.tgz" | \
+wget -O - "$SERVER_IP:$SERVER_PORT/tortank.test.tgz" | \
 	tar -C "$MOUNT_POINT" -xzf -
 
 cat > "$FSTAB" << EOF

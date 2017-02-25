@@ -69,15 +69,20 @@ bin/tortank:
 $(DATA_DIR)/tortank.tgz: bin/tortank assets/setup.sh $(shell find root -type f | sed 's/ /\\ /g')
 	@sudo rsync -rltDv --exclude=".gitkeep" "root/" "$</"
 	@CMD="/mnt/$(word 2,$^)" $(MAKE) chroot.tortank
-	@sudo tar --transform="s|$</|/|" -cvzf $@ $<
+	@sudo tar --use-compress-program=pigz --transform="s|$</|/|" -czf $@ $<
+
+DELETE = /etc/X11/xorg.conf.d/20-nvidia.conf /etc/modules-load.d/nvidia.conf \
+		 /etc/modprobe.d/nvidia.conf
+$(DATA_DIR)/tortank.test.tgz: $(DATA_DIR)/tortank.tgz
+	@zcat $< | tar -O --delete $(DELETE) | pigz > $@
 
 chroot.alpine: bin/alpine
 	@sudo systemd-nspawn -M alpine -D $< --bind=$(CURDIR):/mnt $(CMD)
 
 bin/alpine: $(DATA_DIR)/alpine
 	@mkdir -p $@
-	@wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" | \
-		tar -C "$@" --transform="s|rootfs/|/|" -xzf -
+	@wget -O - "https://quay.io/c1/aci/quay.io/coreos/alpine-sh/latest/aci/linux/amd64" \
+		| tar -C "$@" --transform="s|rootfs/|/|" -xzf -
 	@echo "http://$(BRIDGE_IP):$(SERVER_PORT)/alpine" > "$@/etc/apk/repositories"
 	@sudo systemd-nspawn -M alpine -D $@ apk add --update alpine-sdk openssl-dev tar
 
@@ -109,7 +114,7 @@ clean-virsh:
 clean:
 	@sudo rm -rf $(INITFS) $(KERNEL) bin/alpine
 
-DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.tgz
+DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.test.tgz
 bin/ipxe.qcow2: vendor/ipxe/src/bin/ipxe.iso $(DATA)
 	$(MAKE) serve clean-virsh
 	virt-install --name ipxe --memory 1024 --virt-type kvm  \
