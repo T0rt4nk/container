@@ -19,7 +19,7 @@ chmod +x /usr/sbin/policy-rc.d
 apt-get $APT_OPTIONS remove gnupg && apt-get update && apt-get $APT_OPTIONS install gnupg2
 
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys \
-	A6616109451BBBF2 A040830F7FAC5991 1397BC53640DB551
+	"A6616109451BBBF2" "A040830F7FAC5991" "1397BC53640DB551" "5A7D1D38BEB6D886"
 
 dpkg --add-architecture i386
 
@@ -28,14 +28,13 @@ apt-get update && apt-get $APT_OPTIONS dist-upgrade
 declare packages=(
 	"linux-image-amd64" "locales"
 	"git" "tig" "zsh" "tmux" "ranger" "make" "apt-file" "rxvt-unicode-256color"
-	"grub2" "ssh" "vim" "steam"
+	"grub2" "ssh" "neovim" "steam"
 	# Python
 	"python-pip" "python-dev" "ipython" "python-pip-whl"
 	# Cinnamon
 	"xserver-xorg" "x11-xserver-utils" "xfonts-base" "xinit"
     "lightdm-gtk-greeter" "cinnamon-core" "libgl1-mesa-dri" "dmz-cursor-theme"
-    "nvidia-driver" "plymouth"
-	"neovim"
+    "nvidia-driver" "plymouth" "arc-theme"
 )
 declare packages_pip=("pdbpp" "path.py")
 
