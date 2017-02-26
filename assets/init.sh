@@ -7,8 +7,7 @@ export SERVER_IP=192.168.122.1
 export SERVER_PORT=5050
 export MOUNT_POINT="/mnt/"
 
-/bin/busybox mkdir -p /usr/bin /usr/sbin /proc /sys /dev /media/cdrom \
-	/media/usb /tmp
+/bin/busybox mkdir -p /usr/bin /usr/sbin /proc /sys /dev /tmp
 /bin/busybox --install -s
 
 # hide kernel messages
@@ -41,7 +40,6 @@ find /sys -name modalias | xargs sort -u | xargs modprobe -a 2> /dev/null
 # configure network
 for x in /sys/class/net/eth*
 do
-	echo $x
 	[ -e "$x" ] && device=${x##*/} && break
 done
 if [ -z "$device" ]
