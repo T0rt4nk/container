@@ -33,8 +33,9 @@ declare packages=(
 	"python-pip" "python-dev" "ipython" "python-pip-whl"
 	# Cinnamon
 	"xserver-xorg" "x11-xserver-utils" "xfonts-base" "xinit"
-    "lightdm-gtk-greeter" "cinnamon-core" "libgl1-mesa-dri" "dmz-cursor-theme"
-    "nvidia-driver" "plymouth" "arc-theme"
+    "lightdm-gtk-greeter" "cinnamon-core" "dmz-cursor-theme"
+    "plymouth" "arc-theme"
+	# "libgl1-mesa-dri" "nvidia-driver"  # not working in test env
 )
 declare packages_pip=("pdbpp" "path.py")
 

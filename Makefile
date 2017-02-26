@@ -71,11 +71,6 @@ $(DATA_DIR)/tortank.tgz: bin/tortank assets/setup.sh $(shell find root -type f |
 	@CMD="/mnt/$(word 2,$^)" $(MAKE) chroot.tortank
 	@sudo tar --transform="s|$</|/|" --use-compress-program=pigz -cf $@ $<
 
-DELETE = /etc/X11/xorg.conf.d/20-nvidia.conf /etc/modules-load.d/nvidia.conf \
-		 /etc/modprobe.d/nvidia.conf
-$(DATA_DIR)/tortank.test.tgz: $(DATA_DIR)/tortank.tgz
-	@zcat $< | tar -O --delete $(DELETE) | pigz > $@
-
 chroot.alpine: bin/alpine
 	@sudo systemd-nspawn -M alpine -D $< --bind=$(CURDIR):/mnt $(CMD)
 
@@ -114,7 +109,7 @@ clean-virsh:
 clean:
 	@sudo rm -rf $(INITFS) $(KERNEL) bin/alpine
 
-DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.test.tgz
+DATA = $(INITFS) $(KERNEL) $(DATA_DIR)/setup-disk.sh $(DATA_DIR)/tortank.tgz
 bin/ipxe.qcow2: vendor/ipxe/src/bin/ipxe.iso $(DATA)
 	$(MAKE) serve clean-virsh
 	virt-install --name ipxe --memory 1024 --virt-type kvm  \
