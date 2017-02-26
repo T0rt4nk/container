@@ -34,7 +34,7 @@ declare packages=(
 	# Cinnamon
 	"xserver-xorg" "x11-xserver-utils" "xfonts-base" "xinit"
     "lightdm-gtk-greeter" "cinnamon-core" "dmz-cursor-theme"
-    "plymouth" "arc-theme" "moka-icon-theme"
+    "plymouth" "arc-theme" "moka-icon-theme" "fonts-cantarell"
 	# "libgl1-mesa-dri" "nvidia-driver"  # not working in test env
 )
 
