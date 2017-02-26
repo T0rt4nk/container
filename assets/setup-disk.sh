@@ -50,6 +50,8 @@ chroot /mnt update-grub
 # Due to the the way the archive is created, this fix this
 # http://stackoverflow.com/questions/21716426/cant-apt-get-remove-or-apt-get-install-fopen-permission-denied
 chroot /mnt chown -R man /var/cache/man
+# Put expected permissions here
+chroot /mnt chown -R max:users /home/max
 
 # Remove the nvidia.conf file, kernel driver not present in test
 rm "/mnt/etc/X11/xorg.conf.d/20-nvidia.conf"

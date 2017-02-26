@@ -28,13 +28,13 @@ apt-get update && apt-get $APT_OPTIONS dist-upgrade
 declare packages=(
 	"linux-image-amd64" "locales"
 	"git" "tig" "zsh" "tmux" "ranger" "make" "apt-file" "rxvt-unicode-256color"
-	"grub2" "ssh" "neovim" "steam"
+	"grub2" "ssh" "neovim" "steam" "automake" "autoconf" "mplayer2" "evince"
 	# Python
 	"python-pip" "python-dev" "ipython" "python-pip-whl"
 	# Cinnamon
 	"xserver-xorg" "x11-xserver-utils" "xfonts-base" "xinit"
     "lightdm-gtk-greeter" "cinnamon-core" "dmz-cursor-theme"
-    "plymouth" "arc-theme"
+    "plymouth" "arc-theme" "moka-icon-theme"
 	# "libgl1-mesa-dri" "nvidia-driver"  # not working in test env
 )
 declare packages_pip=("pdbpp" "path.py")
@@ -64,5 +64,13 @@ if ! getent passwd max; then
     cd /home/max/documents/development/dotfiles && sudo -u max make && cd -
     trap "passwd max" EXIT
 fi
+
+# https://github.com/horst3180/arc-icon-theme
+git clone https://github.com/horst3180/arc-icon-theme --depth 1 \
+	&& cd arc-icon-theme \
+	&& ./autogen.sh --prefix=/usr \
+	&& make install \
+	&& cd - \
+	&& rm -rf arc-icon-theme
 
 rm /usr/sbin/policy-rc.d
