@@ -37,18 +37,25 @@ declare packages=(
     "plymouth" "arc-theme" "moka-icon-theme"
 	# "libgl1-mesa-dri" "nvidia-driver"  # not working in test env
 )
+
+declare packages_unstable=("firefox")
+
 declare packages_pip=("pdbpp" "path.py")
 
-debconf-set-selections <<< "keyboard-configuration  keyboard-configuration/xkb-keymap select  fr"
-debconf-set-selections <<< "keyboard-configuration  keyboard-configuration/compose  select  No compose key"
-debconf-set-selections <<< "keyboard-configuration  keyboard-configuration/modelcode  string  pc105"
+debconf-set-selections <<< $(cat << EOF
+keyboard-configuration  keyboard-configuration/xkb-keymap select  fr
+keyboard-configuration  keyboard-configuration/compose  select  No compose key
+keyboard-configuration  keyboard-configuration/modelcode  string  pc105
+locales locales/default_environment_locale select en_US.UTF-8
+steam      steam/purge     note
+steam      steam/license   note
+steam      steam/question  select I AGREE
+EOF)
 
-debconf-set-selections <<< "locales locales/default_environment_locale select en_US.UTF-8"
-debconf-set-selections <<< "steam      steam/purge     note    "
-debconf-set-selections <<< "steam      steam/license   note    "
-debconf-set-selections <<< "steam      steam/question  select I AGREE"
+apt-get $APT_OPTIONS install "${packages[@]}"
+apt-get $APT_OPTIONS install -t unstable "${packages_unstable[@]}"
+apt-get clean # reduce heavily the size of the tarball
 
-apt-get $APT_OPTIONS install "${packages[@]}" && apt-get clean
 pip install --no-cache-dir "${packages_pip[@]}"
 
 ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
